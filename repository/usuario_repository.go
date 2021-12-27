@@ -10,7 +10,7 @@ import (
 
 const (
 	QUERY_INSERT     = "INSERT INTO	usuarios (nome) VALUES (?)"
-	QUERY_UPDATE     = "UPDATE usuarios SET nome=%s WHERE id = %d"
+	QUERY_UPDATE     = "UPDATE usuarios SET nome=? WHERE id = ?"
 	QUERY_SELECT_ONE = "SELECT id, nome from usuarios where id=%d"
 	QUERY_DELETE     = "DELETE FROM usuarios WHERE id=%d"
 )
@@ -23,7 +23,7 @@ func init() {
 	}
 }
 
-type usuario struct {
+type Usuario struct {
 	ID   int    `json:"id"`
 	Nome string `json:"nome"`
 }
@@ -39,8 +39,8 @@ func InsertUser(nome string) string {
 	rows, erro := result.RowsAffected()
 
 	if erro != nil {
-		return err.Error()
 		log.Fatal(err.Error())
+		return err.Error()
 	} else if rows > 0 {
 		return "Inserido com sucesso"
 	}
@@ -58,23 +58,23 @@ func DeleteUser(id int) string {
 	rows, erro := result.RowsAffected()
 
 	if erro != nil {
+		log.Fatal(err)
 		return erro.Error()
-		log.Fatal(err.Error())
 	} else if rows > 0 {
 		return "Usuario apagado com exito!"
 	}
 	return "Não foi possivel apagar este usuario!"
 }
 
-func GetUser(id int) usuario {
-	var user usuario
+func GetUser(id int) Usuario {
+	var user Usuario
 	defer db.Close()
 	rows, err := db.Query(fmt.Sprintf(QUERY_SELECT_ONE, id))
-	defer rows.Close()
 
 	if err != nil {
 		panic(err)
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		rows.Scan(&user.ID, &user.Nome)
@@ -82,4 +82,15 @@ func GetUser(id int) usuario {
 
 	return user
 
+}
+
+func UpdateUser(user Usuario) Usuario {
+	defer db.Close()
+	_, err := db.Exec(QUERY_UPDATE, user.Nome, user.ID)
+	if err != nil {
+		panic(err)
+	}
+
+	updateUser := GetUser(user.ID)
+	return updateUser
 }
